@@ -235,8 +235,8 @@ def main():
                 with zipfile.ZipFile(file, mode='r') as archive:
                     archive.extractall(mod_dir+mod_name)
  
-            contents = search_esps(mod_dir) 
-            add_config_line = 'data=\"' + mod_dir + '\"' 
+            contents = search_esps(mod_dir+mod_name) 
+            add_config_line = 'data=\"' + mod_dir + mod_name + '\"'
   
             with open(openmw_config_file, 'a') as cfg:
                 cfg.write('\n\n## [' + mod_name + ']')
