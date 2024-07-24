@@ -62,23 +62,27 @@ def get_mods():
     for mod in mods:
         name = mod
 
-        if is_windows():
-            fullpath = mod_dir + '\\' + mod
-        else:
-            fullpath = mod_dir + '/' + mod 
+        fullpath = get_modfolder(mod)
 
         enabled = False
         with open(openmw_config_file) as cfg:
+            idx=0 
             lines = cfg.readlines()
-            for line in lines:
-                if name in line and not line.startswith('##'):
-                    enabled = True
-                    break
-
+            while idx<len(lines): 
+                if name in lines[idx] and lines[idx].startswith('## ['): # check if name appears in header line
+                    idx+=1
+                    if not lines[idx].startswith('##'):
+                        enabled=True
+                        break
+                    else:
+                        break
+                idx+=1
+                    
         m = ModEntry(name, fullpath, enabled)
         modlist[len(modlist)+1] = m
         print('Loaded ', name) 
 
+# this method is a misnomer; rename later
 def search_esps(dir_name):
     esps = []
 
@@ -94,7 +98,7 @@ def search_esps(dir_name):
             esps.append('\ndata=\"'+new_element+'\"') 
             esps.extend(search_esps(new_element))
         
-        elif '.esp' in element.lower():
+        elif '.esp' in element.lower() or '.esm' in element.lower():
             esps.append('\ncontent='+element) 
      
     return esps
@@ -105,16 +109,31 @@ def remove_modfolder(to_remove):
         folder_char = '\\'
     else:
         folder_char = '/'
-        
+       
+    # removes elements in a DFS fashion
     for item in os.listdir(to_remove):
         if os.path.isdir(to_remove+item):
             remove_modfolder(to_remove+item+folder_char)
         elif os.path.isfile(to_remove + item):
-            os.chmod(to_remove+item, 0o222)
+            os.chmod(to_remove+item, 0o222) # grants write permissions to remove file
             os.remove(to_remove+item)
         
     os.chmod(to_remove, 0o222)
     os.rmdir(to_remove)
+
+def table(number, mod):
+    maxchar_number = 5
+    maxchar_name = 50
+    
+    print(str(number), '.', end=''),
+    for i in range(maxchar_number-len(str(number))-1):
+        print(' ', end=''),
+
+    print('|', mod.get_name(), end=''),
+    for i in range(maxchar_name-len(mod.get_name())):
+        print(' ', end=''),
+
+    print('|', 'Yes' if mod.get_enabled() else 'No')
 
 user_dir = ''
 if is_windows():
@@ -128,6 +147,7 @@ if is_windows():
 else:
     ini = './mminfo.ini'
 
+# redirects user to setup before use if no .ini exists
 if not os.path.exists(ini):
     setup(ini)
 
@@ -155,6 +175,7 @@ def main():
 
         decision = decision[0].lower()
 
+        # set Morrowind's install directory
         if decision == 's':
             valid_dir_entered = False
 
@@ -179,7 +200,8 @@ def main():
                     valid_dir_entered = True 
                 else:
                     print('Error: directory invalid.\n')
-                    
+                   
+        # install new mod
         elif decision == 'i':
             file = ''
             mod_name = ''
@@ -190,6 +212,7 @@ def main():
                     mod_name = file.split('\\')[-1] 
                 else:
                     mod_name = file.split('/')[-1]
+                
                 mod_name_breakdown = mod_name.split('.')
                 mod_name = mod_name_breakdown[0]
                 filetype = mod_name_breakdown[1]
@@ -201,17 +224,16 @@ def main():
                     print('Error: path not found.')
                     file = ''
 
-            if (file == 'q'): break
-
-            mod_dir = get_modfolder(mod_name) 
+            slash = '\\' if is_windows() else '/'
+            mod_dir = get_modfolder(slash) 
                 
             if filetype == '7z':
                 with py7zr.SevenZipFile(file, mode='r') as archive:
-                    archive.extractall(path=mod_dir)
+                    archive.extractall(path=mod_dir+mod_name)
            
             if filetype == 'zip':
                 with zipfile.ZipFile(file, mode='r') as archive:
-                    archive.extractall(mod_dir)
+                    archive.extractall(mod_dir+mod_name)
  
             contents = search_esps(mod_dir) 
             add_config_line = 'data=\"' + mod_dir + '\"' 
@@ -228,7 +250,8 @@ def main():
             new_entry = ModEntry(mod_name, mod_dir, True)
             
             modlist[len(modlist)+1] = new_entry 
-                  
+                 
+        # enable mod
         elif decision == 'e':
             selection=0
             while selection<1 or selection>len(modlist):
@@ -248,7 +271,7 @@ def main():
             idx=0
             while idx<len(lines):
                 if modlist[selection].get_name() in lines[idx]:
-                    idx += 1 
+                    idx += 1 # move to first 'data=' line 
                     if lines[idx].startswith('## '):
                         while idx<len(lines) and lines[idx] != '\n':
                             lines[idx] = lines[idx][3:]
@@ -265,6 +288,7 @@ def main():
             with open(openmw_config_file, mode='w') as cfg:
                 cfg.writelines(lines) 
 
+        # disable mod
         elif decision == 'd':
             selection=0
             while selection<1 or selection>len(modlist):
@@ -300,7 +324,8 @@ def main():
 
             with open(openmw_config_file, mode='w') as cfg:
                 cfg.writelines(lines)
-                
+               
+        #uninstall mod
         elif decision == 'u':
             selection=0
             while selection<1 or selection>len(modlist):
@@ -347,15 +372,18 @@ def main():
                 
             else:
                 print("Removal of " + modlist[selection].get_name() + " cancelled.")
- 
+
+        # print list of mods in a tabular fashion
         elif decision == 'c':
-            print('Mod#\t|Name\t\t\t\t\t\t\t|Enabled\t\n------------------------------------------------------------------------------------------------------------')
+            print(' Mod# | Name                                              | Enabled\n------------------------------------------------------------------------------------------------------------')
             idx=1 
-            while idx <= len(modlist):
-                print(idx, '\t', end='')
-                modlist[idx].print_entry()
+            while idx <= len(modlist): 
+                table(idx, modlist[idx])
+                #print(idx, '\t', end='')
+                #modlist[idx].print_entry()
                 idx+=1 
 
+        # quit
         elif decision == 'q': 
             print('Terminating program...')
             quit(0) 
