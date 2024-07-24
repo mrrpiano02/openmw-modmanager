@@ -8,6 +8,10 @@ import zipfile
 from mod_entry import ModEntry
 from setup import setup
 
+# return if system is a Windows system
+def is_windows():
+    return not os.name == 'posix'
+
 # determines the operating system and location of config directory 
 def determine_os():
     if 'linux' in sys.platform:
@@ -32,31 +36,26 @@ def validate_gamedir(configval):
     else:
         print('Game directory location unsuccessful.')
         return ''
-        
+
+# returns location of mod folder because it's cluttering things up to keep rewriting code
+def get_modfolder(mod_name):
+    if is_windows():
+        return morrowind_installation + '\\Mods' + mod_name
+    else:
+        return morrowind_installation + '/Mods' + mod_name
+
 # checks for existence of mod folder and creates it as needed
 def create_modfolder():
-    mod_dir = ''
-    if is_windows():
-        mod_dir = morrowind_installation + '\\Mods'
-    else:
-        mod_dir = morrowind_installation + '/Mods'
+    mod_dir = get_modfolder('')
 
     if not os.path.isdir(mod_dir):
         print('Mod folder not detected. Creating...')
         os.mkdir(mod_dir)
         print('Mod directory \'%s\' created.' % mod_dir) 
 
-# return if system is a Windows system
-def is_windows():
-    return not os.name == 'posix'
-
 # fetches all mods in modfolder
 def get_mods():
-    mod_dir = ''
-    if is_windows():
-        mod_dir = morrowind_installation + '\\Mods'
-    else:
-        mod_dir = morrowind_installation + '/Mods'
+    mod_dir = get_modfolder('')
 
     mods = os.listdir(mod_dir)
 
@@ -204,11 +203,7 @@ def main():
 
             if (file == 'q'): break
 
-            mod_dir = ''            
-            if is_windows():
-                mod_dir = morrowind_installation + '\\Mods' + '\\' + mod_name
-            else:
-                mod_dir =  morrowind_installation + '/Mods' + '/' + mod_name
+            mod_dir = get_modfolder(mod_name) 
                 
             if filetype == '7z':
                 with py7zr.SevenZipFile(file, mode='r') as archive:
