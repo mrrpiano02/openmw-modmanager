@@ -125,12 +125,18 @@ def table(number, mod):
     maxchar_number = 5
     maxchar_name = 50
     
+    modname = mod.get_name()
+
+    if len(modname) > 50:
+        modname = modname[:47] 
+        modname += '...'
+ 
     print(str(number), '.', end=''),
     for i in range(maxchar_number-len(str(number))-1):
         print(' ', end=''),
 
-    print('|', mod.get_name(), end=''),
-    for i in range(maxchar_name-len(mod.get_name())):
+    print('|', modname, end=''),
+    for i in range(maxchar_name-len(modname)):
         print(' ', end=''),
 
     print('|', 'Yes' if mod.get_enabled() else 'No')
