@@ -4,7 +4,7 @@ class ModEntry:
         self.modname = name
         self.fullpath = path
         self.enabled = is_enabled
-
+    
     def get_name(self):
         return self.modname
 
