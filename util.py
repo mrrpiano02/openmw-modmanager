@@ -4,7 +4,6 @@ import configparser
 from setup import setup
 from mod_entry import ModEntry
 
-config = configparser.ConfigParser()
 user_dir = ''
 
 # return if system is a Windows system
@@ -16,18 +15,8 @@ if is_windows():
 else:
     user_dir = os.environ['HOME']
 
-if is_windows():
-    ini = '.\\mminfo.ini'
-else:
-    ini = './mminfo.ini'
-
-if not os.path.exists(ini):
-    setup(ini)
-
-config.read(ini)
-
+morrowind_installation = '' 
 openmw_config_file = ''
-morrowind_installation = config['General']['MorrowindDirectory']
 
 # determines the operating system and location of config directory 
 def determine_os():
@@ -47,6 +36,10 @@ def determine_os():
 # ensures game directory is assigned directory
 
 def validate_gamedir(configval):
+
+    if configval == '':
+        return ''
+
     if os.path.isdir(configval):
         print('Game directory located.') 
         return configval 

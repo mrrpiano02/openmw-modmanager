@@ -3,15 +3,27 @@
 import os
 import sys 
 import configparser 
-import py7zr
-import zipfile
 from mod_entry import ModEntry
 from setup import setup
 import util as u
 
+
 openmw_config_file = ''
 
 modlist = {}
+config = configparser.ConfigParser()
+
+if u.is_windows():
+    ini = '.\\mminfo.ini'
+else:
+    ini = './mminfo.ini'
+
+if not os.path.exists(ini):
+    setup(ini)
+
+config.read(ini)
+
+u.morrowind_installation = config.['General']['morrowinddirectory']
 
 def main():
     decision = ''
@@ -79,33 +91,12 @@ def main():
                     print('Error: path not found.')
                     file = ''
 
-            slash = '\\' if is_windows() else '/'
+            slash = '\\' if u.is_windows() else '/'
             mod_dir = u.get_modfolder(slash) 
-                
-            if filetype == '7z':
-                with py7zr.SevenZipFile(file, mode='r') as archive:
-                    archive.extractall(path=mod_dir+mod_name)
-           
-            if filetype == 'zip':
-                with zipfile.ZipFile(file, mode='r') as archive:
-                    archive.extractall(mod_dir+mod_name)
- 
-            contents = u.search_esps(mod_dir+mod_name) 
-            add_config_line = 'data=\"' + mod_dir + mod_name + '\"'
-  
-            with open(openmw_config_file, 'a') as cfg:
-                cfg.write('\n\n## [' + mod_name + ']')
-                cfg.write('\n' + add_config_line)
-                print('Added ' + mod_dir + ' to openmw.cfg')
-
-                for element in contents:
-                    cfg.write(element)
-                    print('Added ' + element + ' to openmw.cfg')
-
-            new_entry = ModEntry(mod_name, mod_dir, True)
             
-            modlist[len(modlist)+1] = new_entry 
-                 
+            mod_fullpath = mod_dir + mod_name
+            install_mod(file, mod_fullpath, filetype, modlist, openmw_config_file)
+                
         # enable mod
         elif decision == 'e':
             selection=0
@@ -119,30 +110,9 @@ def main():
                 else:
                     if selection<1 or selection>len(modlist):
                         print('Error: selection out of range 1-' + str(len(modlist)))
-      
-            with open(openmw_config_file, mode='r') as cfg:
-                lines = cfg.readlines()
-
-            idx=0
-            while idx<len(lines):
-                if modlist[selection].get_name() in lines[idx]:
-                    idx += 1 # move to first 'data=' line 
-                    if lines[idx].startswith('## '):
-                        while idx<len(lines) and lines[idx] != '\n':
-                            lines[idx] = lines[idx][3:]
-                            idx += 1
-
-                        modlist[selection].flip_enabled_status()
-                    else:
-                        print('Mod already enabled.')
-                    
-                    break
-
-                idx += 1 
-
-            with open(openmw_config_file, mode='w') as cfg:
-                cfg.writelines(lines) 
-
+     
+            enable_mod(modlist, selection, openmw_config_file) 
+            
         # disable mod
         elif decision == 'd':
             selection=0
@@ -156,29 +126,8 @@ def main():
                 else:
                     if selection<1 or selection>len(modlist):
                         print('Error: selection out of range 1-' + str(len(modlist)))
-
             
-            with open(openmw_config_file, mode='r') as cfg:
-                lines = cfg.readlines()
-
-            idx=0
-            while idx<len(lines):
-                if modlist[selection].get_name() in lines[idx]:
-                    idx += 1
-                    if not lines[idx].startswith('## '):
-                        while idx<len(lines) and lines[idx] != '\n':
-                            lines[idx] = ''.join(["## ", lines[idx]]) 
-                            idx += 1
-
-                        modlist[selection].flip_enabled_status()
-                    else:
-                        print('Mod already disabled.')
-                    break
-                    
-                idx += 1 
-
-            with open(openmw_config_file, mode='w') as cfg:
-                cfg.writelines(lines)
+            disable_mod(modlist, selection, openmw_config_file)
                
         #uninstall mod
         elif decision == 'u':
@@ -198,12 +147,13 @@ def main():
             
             if check.lower() == 'y' or check.lower() == 'yes':
                 if u.is_windows():
-                    to_remove = morrowind_installation + '\\Mods\\' + modlist[selection].get_name() + '\\'
+                    to_remove = u.morrowind_installation + '\\Mods\\' + modlist[selection].get_name() + '\\'
                 else:
-                    to_remove = morrowind_installation + '/Mods/' + modlist[selection].get_name() + '/'
+                    to_remove = u.morrowind_installation + '/Mods/' + modlist[selection].get_name() + '/'
                     
                 u.remove_modfolder(to_remove)
-                
+                modlist.pop(selection) 
+ 
                 with open(openmw_config_file, 'r') as cfg:
                     lines = cfg.readlines()
                   
@@ -234,8 +184,6 @@ def main():
             idx=1 
             while idx <= len(modlist): 
                 u.table(idx, modlist[idx])
-                #print(idx, '\t', end='')
-                #modlist[idx].print_entry()
                 idx+=1 
 
         # quit
