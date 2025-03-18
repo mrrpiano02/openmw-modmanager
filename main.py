@@ -6,7 +6,7 @@ import configparser
 from mod_entry import ModEntry
 from setup import setup
 import util as u
-
+from actions import *
 
 openmw_config_file = ''
 
@@ -23,7 +23,7 @@ if not os.path.exists(ini):
 
 config.read(ini)
 
-u.morrowind_installation = config.['General']['morrowinddirectory']
+u.morrowind_installation = config['General']['morrowinddirectory']
 
 def main():
     decision = ''

@@ -8,29 +8,55 @@ import util as u
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import ttk
+from tkinter import StringVar
 from mod_entry import ModEntry
 from actions import *
 
 
-class SetupGUI(tk.Toplevel):
+class SetupGUI():
     
-    def launch_filedialog(self):
-        directory = filedialog.askdirectory(title='Select Game Directory')
-
-        to_add = ['[General]', 'morrowinddirectory = '+directory]
+    def write_ini(self, root):
         with open('./mminfo.ini', 'w') as file:
-            for entry in to_add:
+            for entry in self.to_add:
                 file.write(entry+'\n')
 
         os.chmod('./mminfo.ini', 0o777)
+        
+        root.destroy()
+        
+    def launch_filedialog(self):
+        directory = filedialog.askdirectory(title='Select Game Directory')
+        self.to_add = ['[General]', 'morrowinddirectory = '+directory]
+        self.filedir.set('Current directory: ' + directory)
 
     def __init__(self, root):
-
+            
+        self.filedir = StringVar()
+        self.filedir.set('Current directory: ')
+        
+        self.to_add = ['','']
+        
         root.grid()
-        self.msg = ttk.Label(root, text='Game directory not detected.\nIn order to continue, please\n specify a game directory.', padding=[65,25])
-        self.btn = ttk.Button(root, text='Select directory', command=self.launch_filedialog) 
+        self.msg = ttk.Label(root, text='Game directory not detected. In order to continue, please specify a game directory.', padding=[10,25])
+        
+        self.dir_frame = tk.Frame(root, width=300, height=30, pady=10)
+        self.btn = ttk.Button(self.dir_frame, text='Select directory', command=self.launch_filedialog)
+        self.filedir_label = ttk.Label(self.dir_frame, textvariable=self.filedir)
+        
+        self.btn.grid(column=0, row=0, padx=10, sticky='w')
+        self.filedir_label.grid(column=1, row=0, sticky='w')
+        
+        self.btn_frame = tk.Frame(root, padx=20)
+        
+        self.ok_btn = ttk.Button(self.btn_frame, text='OK', command=lambda: self.write_ini(root))
+        self.cancel_btn = ttk.Button(self.btn_frame, text='Close', command=root.destroy)
+        
+        self.ok_btn.grid(column=0, row=0)
+        self.cancel_btn.grid(column=1, row=0)
+        
         self.msg.grid(column=0, row=0)
-        self.btn.grid(column=0, row=1)
+        self.dir_frame.grid(column=0, row=1)
+        self.btn_frame.grid(column=0, row=2)
 
 
 class ModManagerGUI(tk.Frame):
@@ -241,13 +267,11 @@ def __main__():
         setup_root = tk.Tk()
         tk.Canvas(setup_root, bg='#e1e1e1')
         setup_root.title('setup-gui')
-        setup_root.geometry('320x200')
+        setup_root.geometry('640x480')
         setup_root.minsize(320,200)
-        setup_root.resizable(width=False, height=False)
         setupgui = SetupGUI(setup_root)
-
         setup_root.mainloop()
-
+        
     root = tk.Tk()
     tk.Canvas(root, bg='#e1e1e1')
     root.title('openmw-modmanager-gui')
