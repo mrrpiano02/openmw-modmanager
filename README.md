@@ -27,6 +27,3 @@ Linux users can also use the provided install script to automate the process and
 To run `openmw_mm.py`:
 1. `source ./venv/bin/activate`
 2. `python openmw_mm.py`
-
-or:
-`python3.11 openmw_mm.py` 
