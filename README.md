@@ -19,11 +19,14 @@ One can install the project using `git clone` and run it using `python`:
 1. `git clone https://github.com/mrrpiano02/openmw-modmanager.git`
 2. `cd openmw-modmanager`
 3. `python openmw_mm.py`
+
 Linux users can also use the provided install script to automate the process and to help eliminate dependency issues with py7zr:
 1. `chmod +x install.sh`
 2. `./install.sh`
+
 To run `openmw_mm.py`:
 1. `source ./venv/bin/activate`
 2. `python openmw_mm.py`
+
 or:
 `python3.11 openmw_mm.py` 
